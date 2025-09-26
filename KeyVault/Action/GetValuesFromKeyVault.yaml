@@ -1,0 +1,63 @@
+
+name: Get Key Vault secrets
+
+on:
+  workflow_dispatch:
+#  push:
+#    branches: [ main ]
+
+permissions:
+  id-token: write   # required for OIDC login
+  contents: read
+
+env:
+  # Your Azure subscription context
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}               # App registration (federated creds)
+  KEYVAULT_NAME: githubkeyvaultreinke                           # e.g., kv-prod-001
+
+jobs:
+  fetch-secrets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (optional if you need repo files)
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get secrets from Key Vault
+        id: kv
+        uses: azure/get-keyvault-secrets@v1
+        with:
+          keyvault: ${{ env.KEYVAULT_NAME }}
+          # List each secret name on a new line. Optionally pin a version: secretName:version
+
+          secrets: 'DB-PASSWORD, API-TOKEN, CONNECTION-STRING'
+
+      - name: Write secrets to file
+        env:
+          DB_PASSWORD: ${{ steps.kv.outputs['DB-PASSWORD'] }}
+          API_TOKEN: ${{ steps.kv.outputs['API-TOKEN'] }}
+          CONNECTION_STRING: ${{ steps.kv.outputs['CONNECTION-STRING'] }}
+        run: |
+          python - <<'PY'
+          import os
+          with open("secrets.log", "w") as f:
+              f.write("DB_PASSWORD: " + os.environ["DB_PASSWORD"] + "\n")
+              f.write("API_TOKEN: " + os.environ["API_TOKEN"] + "\n")
+              f.write("CONNECTION_STRING: " + os.environ["CONNECTION_STRING"] + "\n")
+          print("Wrote secrets.log")
+          PY
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-secrets
+          path: secrets.log
