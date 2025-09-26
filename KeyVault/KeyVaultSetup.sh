@@ -15,11 +15,18 @@ az group create \
   --location $LOCATION
 
 # 2. Create the Key Vault
-az keyvault create \
-  --name $KEYVAULT_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --location $LOCATION \
-  --enable-rbac-authorization true
+# Check if Key Vault exists
+if ! az keyvault show --name "$KEYVAULT_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+  echo "Creating Key Vault: $KEYVAULT_NAME"
+  az keyvault create \
+    --name "$KEYVAULT_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --location "$LOCATION" \
+    --enable-rbac-authorization true
+else
+  echo "Key Vault $KEYVAULT_NAME already exists. Skipping creation."
+fi
+
 
 # 3. (One time, required) Give *your current logged-in user* permission
 #    to manage Key Vault secrets (so you can create the secrets).
@@ -27,33 +34,30 @@ CURRENT_USER=$(az ad signed-in-user show --query id -o tsv)
 KEYVAULT_SCOPE=$(az keyvault show -n $KEYVAULT_NAME -g $RESOURCE_GROUP --query id -o tsv)
 
 
-az role assignment create --role "Key Vault Secrets Officer" \ 
-    --assignee soren@reinke.dk --scope $KEYVAULT_SCOPE
+az role assignment create \
+  --role "Key Vault Secrets Officer" \
+  --assignee $CURRENT_USER \
+  --scope $KEYVAULT_SCOPE
 
-
-# az role assignment create \
-#   --role "Key Vault Secrets Officer" \
-#   --assignee $CURRENT_USER \
-#   --scope $KEYVAULT_SCOPE
 
 # # 4. Assign the GitHub App Registration (service principal) the "Key Vault Secrets User" role
-# az role assignment create \
-#   --role "Key Vault Secrets User" \
-#   --assignee $APP_CLIENT_ID \
-#   --scope $KEYVAULT_SCOPE
+az role assignment create \
+  --role "Key Vault Secrets User" \
+  --assignee $APP_CLIENT_ID \
+  --scope $KEYVAULT_SCOPE
 
 # # 5. Add three dummy secrets
-# az keyvault secret set \
-#   --vault-name $KEYVAULT_NAME \
-#   --name "DB-PASSWORD" \
-#   --value "MyDummyPassword123!"
+az keyvault secret set \
+  --vault-name $KEYVAULT_NAME \
+  --name "DB-PASSWORD" \
+  --value "MyDummyPassword123!"
 
-# az keyvault secret set \
-#   --vault-name $KEYVAULT_NAME \
-#   --name "API-TOKEN" \
-#   --value "DummyApiToken-XYZ"
+az keyvault secret set \
+  --vault-name $KEYVAULT_NAME \
+  --name "API-TOKEN" \
+  --value "DummyApiToken-XYZ"
 
-# az keyvault secret set \
-#   --vault-name $KEYVAULT_NAME \
-#   --name "CONNECTION-STRING" \
-#   --value "Server=myserver;Database=mydb;User Id=dummy;Password=secret;"
+az keyvault secret set \
+  --vault-name $KEYVAULT_NAME \
+  --name "CONNECTION-STRING" \
+  --value "Server=myserver;Database=mydb;User Id=dummy;Password=secret;"
