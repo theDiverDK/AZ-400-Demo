@@ -1,0 +1,57 @@
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor/IDE folders
+.vscode/
+.idea/
+*.swp
+
+# Build/temporary artifacts
+*.tmp
+*.bak
+*.old
+
+# Bicep generated ARM templates (from `bicep build`)
+*.json
+
+# Local override / secrets files (YAML)
+*.local.yaml
+*.local.yml
+*.secrets.yaml
+*.secrets.yml
+*.override.yaml
+*.override.yml
+
+# Lock or cache files that shouldn't be versioned
+*.lock
+*.cache
+
+# --- Azure-specific ignores ---
+
+# Azure CLI auth/cache files
+.azure/
+
+# Service Principal / auth JSONs
+azureProfile.json
+accessTokens.json
+
+# ARM/Bicep parameter files with secrets
+*.parameters.json
+*.parameters.yaml
+*.parameters.yml
+
+# Output directories (if you script deployments)
+output/
+deployments/
+
+# Terraform (if mixed with Bicep/YAML infra-as-code)
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+*.tfvars.json
